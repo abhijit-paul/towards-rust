@@ -23,7 +23,7 @@ Caused by:
   no authentication available`  
 
 SOLUTION:  
-*# Add new ssh agent* 
+*# Add new ssh agent*  
 ``eval `ssh-agent -s```  
 
 `ssh-add`
