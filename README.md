@@ -14,6 +14,15 @@
 `rustup component add clippy`  
   Usage: `cargo clippy`  
 
+*#Run format
+`rustup component add rustfmt`
+
+*#Install coverage tool:
+`rustup toolchain install nightly`
+`cargo +nightly install cargo-cov`
+`cargo cov test`
+`cargo cov report --open`
+
 # Pitfalls and solutions:
 
 ERROR:  

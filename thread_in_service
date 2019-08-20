@@ -1,0 +1,44 @@
+//Spawn a thread within a service such that response can be sent to client then and there and the server completes the call asynchronously:
+thread::spawn(move || {
+                                tokio::run(future::lazy(|| {
+                                let body = "customer_email=abhijit.paul@test.com&payment_method_types[]=card&success_url=https://developer.blippar.com/portal/ar-api/maintraining&cancel_url=https://developer.blippar.com/portal/ar-api/examples/&line_items[][name]=Blipp&line_items[][amount]=500&line_items[][currency]=gbp&line_items[][quantity]=1&client_reference_id=amiekhane";
+                                let https = HttpsConnector::new(4).unwrap();
+                                let https_client = Client::builder()
+                                    .build::<_, hyper::Body>(https);
+                                let req = Request::builder()
+                                    .method("POST")
+                                    .uri("https://api.stripe.com/v1/checkout/sessions")
+                                    .header(hyper::header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                                    .header(hyper::header::AUTHORIZATION, "Basic c2tfdGVzdF9hd05ieEhxandjUkZhRVZtWDZuNnRlSm8wME82RDJkd2NyOg==")
+                                    .body(Body::from(body))
+                                    .expect("request builder");
+                                https_client.request(req)
+                                    .and_then(|res| {
+                                        res.into_body().fold(Vec::new(), |mut v, chunk| {
+                                            v.extend(&chunk[..]);
+                                            future::ok::<_, hyper::Error>(v)
+                                        }).and_then(|chunks| {
+                                            let s = String::from_utf8(chunks).unwrap();
+                                            println!("Data: {}", s);
+                                            let v: Value = serde_json::from_str(&s).unwrap();
+                                            future::ok::<_, hyper::Error>(v)
+                                        })
+                                    })
+                                    .map(|json_response| {
+                                        println!("\n\nForm Chunk: {:?}", json_response);
+                                        println!("Client Ref: {}, Session: {}",
+                                         json_response["client_reference_id"],
+                                         json_response["id"]
+                                        )
+                                    })
+                                    .map_err(|err| {
+                                        eprintln!("Error {}", err);
+                                    })
+                                }));
+                            });
+                            Box::new(future::ok(
+                                    Response::builder()
+                                        .status(StatusCode::OK)
+                                        .body(Body::from(format!("{:?}", "{acknowledged: true}")))
+                                        .unwrap()
+                            ))
